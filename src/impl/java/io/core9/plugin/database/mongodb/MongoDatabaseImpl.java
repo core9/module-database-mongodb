@@ -35,7 +35,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 		} else if(System.getenv("CORE9_DBSTRING") != null) {
 			add = new ServerAddress(System.getenv("CORE9_DBSTRING"));
 		} else {
-			add = new ServerAddress("db01.fopshop.nl01.core9.io");
+			add = new ServerAddress("localhost");
 		}
 		if(username == null || username.equals("")) {
 			this.clients.put(db, new MongoClient(add));
