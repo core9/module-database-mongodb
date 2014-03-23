@@ -2,7 +2,7 @@ language: java
 env:
   global:
     - TERM=dumb
-    - secure: "Ommm5b83dWcsu9/jnjeIXU7gvVyUxniCWLbiPlQi1pQ1/C7Me439n77/ZtOHeoGycfXH+diCJ7xHFdhXFAkUKQu2RYOwAdSj5hrHuKw8dYvAEMwNIIELJj8CKbT7EN2hERJe86McCSWZJH5i7E7Kcc8t4VSIxOOEsFB2boPEkmw="
-    - secure: "MLCa3VJ9Hn0TTIYU3hof7g69T4OZBayqcRI/2AdCJ24flgAVGGFC94/fkcRwZvtNqw2reMaLt3cRPEvu9JXqC8l41YtgR/wulTyKtSVNpSCEEUSKqIBmUHx2DrEYmdKFTcRF4sviWqVaoWLmhAmc5j0VzcUdIA+hxF5Odr78gUM="
+    - secure: "G3QS3UXodyA9fs7JUCwokRwPuz2vQvk99QSVXmq9I59nTgele2wJ5zwFS8X1TSDisALgderwmv1T/mPDysGOlZHrS/x5n6lx6gQw88TxfZywuhVb5kpcsWzIow+n1yvTaY5YkSGiG/DuABoAlxZQBfxG+GtJNkA0/QZ+6jagyYc="
+    - secure: "mM/mXkgI4HPZTJJ/j/cx40RQiykWi9Vj7Pn+zxakkLOvWYMADFLGwSKTKIDMg4R6cVxnkx2De7outBKe9Js1BRRLQ65rVCR4y39ajLobu3FfSlTEy1NkwqEMFETQ3069VD5sAnN1Zs2oRKyX+avXW7o2t/tyfdTyPpikDZ//ixk="
 install: 
   - "./gradlew clean test build publish publishBintray"
