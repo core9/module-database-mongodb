@@ -15,6 +15,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.gridfs.GridFS;
@@ -26,17 +27,45 @@ import com.mongodb.gridfs.GridFSInputFile;
 public class MongoDatabaseImpl implements MongoDatabase {
 	
 	private final Map<String,MongoClient> clients = new HashMap<String,MongoClient>();
+	private String masterDB = "";
+	
+	@Override
+	public String getMasterDBName() {
+		return masterDB;
+	}
+	
+	public void execute() {}
+	
+	public MongoDatabaseImpl() {
+		MongoClientURI uri = null;
+		if(System.getProperty("core9.dburi") != null) {
+			uri = new MongoClientURI(System.getProperty("core9.dburi"));
+		} else if(System.getenv("CORE9_DB_URI") != null) {
+			uri = new MongoClientURI(System.getenv("CORE9_DBSTRING"));
+		} else {
+			uri = new MongoClientURI("mongodb://localhost/core9");
+		}
+		try {
+			this.masterDB = uri.getDatabase();
+			this.clients.put(uri.getDatabase(), new MongoClient(uri));
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	@Override
 	public void addDatabase(String db, String username, String password) throws UnknownHostException {
-		ServerAddress add;
-		if(System.getProperty("core9.dbhost") != null) {
-			add = new ServerAddress(System.getProperty("core9.dbhost"));
-		} else if(System.getenv("CORE9_DBSTRING") != null) {
-			add = new ServerAddress(System.getenv("CORE9_DBSTRING"));
+		if(username == null || username.equals("")) {
+			this.clients.put(db, new MongoClient(this.clients.get(masterDB).getAddress()));
 		} else {
-			add = new ServerAddress("localhost");
+			MongoCredential credential = MongoCredential.createMongoCRCredential(username, db, password.toCharArray());
+			this.clients.put(db, new MongoClient(this.clients.get(masterDB).getAddress(), Arrays.asList(credential)));
 		}
+	}
+	
+	@Override
+	public void addDatabase(String host, String db, String username, String password) throws UnknownHostException {
+		ServerAddress add = new ServerAddress(host);
 		if(username == null || username.equals("")) {
 			this.clients.put(db, new MongoClient(add));
 		} else {

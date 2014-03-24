@@ -1,5 +1,6 @@
 package io.core9.plugin.database.mongodb;
 
+import io.core9.core.executor.Executor;
 import io.core9.core.plugin.Core9Plugin;
 import io.core9.plugin.database.Database;
 
@@ -11,11 +12,15 @@ import java.util.Map;
 
 import com.mongodb.MongoClient;
 
-public interface MongoDatabase extends Database, Core9Plugin {
+public interface MongoDatabase extends Core9Plugin, Database, Executor {
+	
+	String getMasterDBName();
 	
 	void setBackend(String db, MongoClient mongo);
 	
 	void addDatabase(String db, String username, String password) throws UnknownHostException;
+	
+	void addDatabase(String host, String db, String username, String password) throws UnknownHostException;
 
 	void setCollection(String db, String coll);
 	
