@@ -12,6 +12,7 @@ import java.util.Map;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
@@ -51,6 +52,11 @@ public class MongoDatabaseImpl implements MongoDatabase {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	@Override
+	public DBCollection getCollection(String db, String coll) {
+		return clients.get(db).getDB(db).getCollection(coll);
 	}
 	
 	@Override

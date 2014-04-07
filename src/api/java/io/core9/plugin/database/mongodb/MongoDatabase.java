@@ -10,9 +10,15 @@ import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 
+import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 
 public interface MongoDatabase extends Core9Plugin, Database, Executor {
+	
+	// New items (for repositories)
+	DBCollection getCollection(String db, String coll);
+	
+	// TODO: Cleanup
 	
 	String getMasterDBName();
 	

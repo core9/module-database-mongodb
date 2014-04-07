@@ -23,6 +23,7 @@ dependencies {
 	coreCompile 'io.core9:core-api:+'
 	apiCompile 'org.mongodb:mongo-java-driver:+' // TODO REMOVE FROM API
 	apiCompile 'io.core9:module-database-api:+'
+	implCompile 'org.mongojack:mongojack:+'
 	testCompile 'com.github.fakemongo:fongo:1.3.7'
 	testCompile 'org.slf4j:slf4j-log4j12:+'
 }
