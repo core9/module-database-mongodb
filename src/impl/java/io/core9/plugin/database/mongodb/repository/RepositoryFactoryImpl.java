@@ -61,7 +61,11 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T update(VirtualHost vhost, String id, T entity) {
 				DBCollection collection = mongo.getCollection((String) vhost.getContext("database"), vhost.getContext("prefix") + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				return coll.updateById(id, entity).getSavedObject();
+				int n = coll.updateById(id, entity).getN();
+				if(n == 1) {
+					return entity;
+				}
+				return null;
 			}
 
 			@Override
@@ -69,6 +73,13 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 				DBCollection collection = mongo.getCollection((String) vhost.getContext("database"), vhost.getContext("prefix") + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
 				coll.removeById(entity.getId());
+			}
+			
+			@Override
+			public void delete(VirtualHost vhost, String id) {
+				DBCollection collection = mongo.getCollection((String) vhost.getContext("database"), vhost.getContext("prefix") + collectionName);
+				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+				coll.removeById(id);
 			}
 			
 			@Override
