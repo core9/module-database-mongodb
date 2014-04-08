@@ -1,15 +1,5 @@
 package io.core9.plugin.database.mongodb.repository;
 
-import java.util.List;
-import java.util.Map;
-
-import org.mongojack.JacksonDBCollection;
-
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-
 import io.core9.plugin.database.mongodb.MongoDatabase;
 import io.core9.plugin.database.repository.Collection;
 import io.core9.plugin.database.repository.CrudEntity;
@@ -17,8 +7,20 @@ import io.core9.plugin.database.repository.CrudRepository;
 import io.core9.plugin.database.repository.NoCollectionNamePresentException;
 import io.core9.plugin.database.repository.RepositoryFactory;
 import io.core9.plugin.server.VirtualHost;
+
+import java.util.List;
+import java.util.Map;
+
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 import net.xeoh.plugins.base.annotations.injections.InjectPlugin;
+
+import org.mongojack.JacksonDBCollection;
+import org.mongojack.internal.MongoJackModule;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
 
 @PluginImplementation
 public class RepositoryFactoryImpl implements RepositoryFactory {
@@ -35,6 +37,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 		}
 		
 		final ObjectMapper mapper = new ObjectMapper();
+		MongoJackModule.configure(mapper);
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		
 		return new CrudRepository<T>(){
@@ -67,11 +70,19 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
 				coll.removeById(entity.getId());
 			}
+			
+			@Override
+			public List<T> getAll(VirtualHost vhost) {
+				return query(vhost, null);
+			}
 
 			@Override
 			public List<T> query(VirtualHost vhost, Map<String, Object> query) {
 				DBCollection collection = mongo.getCollection((String) vhost.getContext("database"), vhost.getContext("prefix") + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+				if(query == null) {
+					return coll.find().toArray();
+				}
 				return coll.find(new BasicDBObject(query)).toArray();
 			}
 		};
