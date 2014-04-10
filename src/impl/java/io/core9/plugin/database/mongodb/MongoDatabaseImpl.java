@@ -42,7 +42,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 		if(System.getProperty("core9.dburi") != null) {
 			uri = new MongoClientURI(System.getProperty("core9.dburi"));
 		} else if(System.getenv("CORE9_DB_URI") != null) {
-			uri = new MongoClientURI(System.getenv("CORE9_DBSTRING"));
+			uri = new MongoClientURI(System.getenv("CORE9_DB_URI"));
 		} else {
 			uri = new MongoClientURI("mongodb://localhost/core9");
 		}
