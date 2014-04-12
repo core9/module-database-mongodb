@@ -10,6 +10,7 @@ import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 
+import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 
@@ -60,4 +61,6 @@ public interface MongoDatabase extends Core9Plugin, Database, Executor {
 
 	void saveStaticFileContents(String db, String bucket,
 			Map<String, Object> query, InputStream stream);
+
+	DB getDb(String db);
 }

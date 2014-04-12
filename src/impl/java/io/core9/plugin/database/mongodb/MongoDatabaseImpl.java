@@ -12,6 +12,7 @@ import java.util.Map;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
@@ -57,6 +58,11 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	@Override
 	public DBCollection getCollection(String db, String coll) {
 		return clients.get(db).getDB(db).getCollection(coll);
+	}
+	
+	@Override
+	public  DB getDb(String db) {
+		return clients.get(db).getDB(db);
 	}
 	
 	@Override
