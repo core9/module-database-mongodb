@@ -42,6 +42,8 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 		
 		return new CrudRepository<T>(){
 			String collectionName = classColl.value();
+			
+			
 
 			@Override
 			public T create(VirtualHost vhost, T entity) {
@@ -89,6 +91,17 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 
 			@Override
 			public List<T> query(VirtualHost vhost, Map<String, Object> query) {
+				try {
+					Map<String, Object> defQuery = type.newInstance().retrieveDefaultQuery();
+					if(query == null) {
+						query = defQuery;
+					} else if(defQuery != null) {
+						defQuery.putAll(query);
+						query = defQuery;
+					}
+				} catch (InstantiationException | IllegalAccessException e) {
+					System.err.println("Couldn't merge queries: " + e.getMessage());
+				}
 				DBCollection collection = mongo.getCollection((String) vhost.getContext("database"), vhost.getContext("prefix") + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
 				if(query == null) {
