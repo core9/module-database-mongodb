@@ -63,4 +63,6 @@ public interface MongoDatabase extends Core9Plugin, Database, Executor {
 			Map<String, Object> query, InputStream stream);
 
 	DB getDb(String db);
+
+	Map<String, Object> getSingleResult(String db, String coll, Map<String, Object> query, Map<String, Object> fields);
 }

@@ -108,6 +108,16 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	
 	@SuppressWarnings("unchecked")
 	@Override
+	public Map<String, Object> getSingleResult(String db, String coll, Map<String, Object> query,  Map<String, Object> fields) {
+		DBObject obj = this.clients.get(db).getDB(db).getCollection(coll).findOne(new BasicDBObject(query), new BasicDBObject(fields));
+		if(obj != null) {
+			return obj.toMap();
+		}
+		return null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
 	public List<Map<String, Object>> getMultipleResults(String db, String coll, Map<String, Object> query) {
 		List<Map<String, Object>> result = new ArrayList<Map<String,Object>>();
 		if(this.clients.get(db) == null) {
