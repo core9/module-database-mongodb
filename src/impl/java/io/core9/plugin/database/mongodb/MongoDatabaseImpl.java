@@ -240,7 +240,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 		objMap.put("filename", filename);
 		objMap.put("contentType", file.getContentType());
 		objMap.put("uploadDate", file.getUploadDate());
-		
+		objMap.put("md5", file.getMD5());
 		return objMap;
 	}
 
