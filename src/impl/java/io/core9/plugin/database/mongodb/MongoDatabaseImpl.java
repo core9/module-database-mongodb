@@ -282,20 +282,20 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	@SuppressWarnings("unchecked")
 	@Override
 	public String upsert(String db, String collection, Map<String, Object> doc, Map<String, Object> query) {
-		if(doc.get("$set") != null) {
-			String id = (String) ((Map<String,Object>) doc.get("$set")).remove("_id");
-			//Can be fixed with $setOnInsert -> [_id, GUID.getUUID()] on MongoDB 2.5.5+
-			if(id != null) {
-				query.put("_id", id);
-			} else if(query.isEmpty()) {
-				query.put("_id", GUID.getUUID());
-			}
-		}
-		if(doc.get("$set") == null && doc.get("_id") == null) {
-			doc.put("_id", GUID.getUUID());
-		}
 		if(query == null){
+			// Always use a default query
 			query = new HashMap<>();
+		}
+		if(query.get("_id") == null) {
+			// Set ID when not in query
+			Map<String,Object> setOnInsert = (Map<String, Object>) doc.get("$setOnInsert");
+			if(setOnInsert == null) {
+				setOnInsert = new HashMap<String,Object>();
+				doc.put("$setOnInsert", setOnInsert);
+			}
+			if(setOnInsert.get("_id") == null) {
+				setOnInsert.put("_id", GUID.getUUID());
+			}
 		}
 		this.clients.get(db).getDB(db).getCollection(collection).update(new BasicDBObject(query), new BasicDBObject(doc), true, false);
 		return (String) query.get("_id");
