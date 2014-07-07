@@ -14,6 +14,7 @@ import java.util.Map;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 import net.xeoh.plugins.base.annotations.injections.InjectPlugin;
 
+import org.mongojack.DBQuery;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.internal.MongoJackModule;
 
@@ -80,6 +81,23 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 				if(n == 1) {
 					return entity;
 				}
+				return null;
+			}
+			
+			@Override
+			public T upsert(VirtualHost vhost, T entity) {
+				return upsert((String) vhost.getContext("database"), (String) vhost.getContext("prefix"), entity);
+			}
+
+			@Override
+			public T upsert(String database, String prefix, T entity) {
+				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
+				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+				int n = coll.update(DBQuery.is("_id", entity.getId()), entity, true, false).getN();
+				if(n == 1) {
+					return entity;
+				}
+
 				return null;
 			}
 
