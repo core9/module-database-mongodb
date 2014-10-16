@@ -8,6 +8,7 @@ import io.core9.plugin.database.repository.NoCollectionNamePresentException;
 import io.core9.plugin.database.repository.RepositoryFactory;
 import io.core9.plugin.server.VirtualHost;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -145,10 +146,10 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 				try {
 					Map<String, Object> defQuery = type.newInstance().retrieveDefaultQuery();
 					if(query == null) {
-						query = defQuery;
-					} else if(defQuery != null) {
-						defQuery.putAll(query);
-						query = defQuery;
+						query = new HashMap<String, Object>();
+					} 
+					if(defQuery != null) {
+						query.putAll(defQuery);
 					}
 				} catch (InstantiationException | IllegalAccessException e) {
 					System.err.println("Couldn't merge queries: " + e.getMessage());
