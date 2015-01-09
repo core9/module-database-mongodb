@@ -116,7 +116,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T updateFields(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				int n = coll.update(new BasicDBObject("_id", entity.getId()), new BasicDBObject("$set", DataUtils.toMap(entity)), false, false).getN();
+				int n = coll.update(new BasicDBObject("_id", entity.getId()), new BasicDBObject("$set", DataUtils.toMap(entity)), true, false).getN();
 				if(n == 1) {
 					return entity;
 				}
