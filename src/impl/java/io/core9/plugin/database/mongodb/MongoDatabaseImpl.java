@@ -55,24 +55,6 @@ public class MongoDatabaseImpl implements MongoDatabase {
 			e1.printStackTrace();
 			System.exit(1);
 		}
-//		MongoClientURI uri = null;
-//		if(System.getProperty("core9.dburi") != null) {
-//			uri = new MongoClientURI(System.getProperty("core9.dburi"));
-//		} else if(System.getenv("CORE9_DB_URI") != null) {
-//			uri = new MongoClientURI(System.getenv("CORE9_DB_URI"));
-//		} else {
-//			uri = new MongoClientURI("mongodb://localhost/core9");
-//		}
-//		try {
-//			this.masterDB = uri.getDatabase();
-//			MongoClient client = new MongoClient();
-//			ReplicaSetStatus status = client.getReplicaSetStatus();
-//			ServerAddress address = status.getMaster();
-//			System.out.println(address.getHost() + ":" + address.getPort());
-//			this.clients.put(uri.getDatabase(), new MongoClient(uri));
-//		} catch (UnknownHostException e) {
-//			e.printStackTrace();
-//		}
 	}
 	
 	private List<MongoCredential> getCredentials() {
