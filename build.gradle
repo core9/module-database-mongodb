@@ -21,7 +21,7 @@ task publishBintray (type: org._10ne.gradle.rest.RestTask, dependsOn: bintrayUpl
 
 dependencies {
 	coreCompile 'io.core9:core-api:+'
-	apiCompile 'org.mongodb:mongo-java-driver:+' // TODO REMOVE FROM API
+	apiCompile 'org.mongodb:mongo-java-driver:2.+' // TODO REMOVE FROM API
 	apiCompile 'io.core9:module-database-api:+'
 	implCompile 'org.mongojack:mongojack:2.0.0'
 	implCompile 'net.minidev:json-smart:+'
