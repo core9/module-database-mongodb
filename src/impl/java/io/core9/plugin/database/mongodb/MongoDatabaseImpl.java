@@ -18,6 +18,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoCredential;
+import com.mongodb.MongoException;
 import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSFile;
@@ -52,7 +53,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 			} else {
 				this.client = new MongoClient("mongodb://localhost/core9");
 			}
-		} catch (UnknownHostException e1) {
+		} catch (MongoException | UnknownHostException e1) {
 			e1.printStackTrace();
 			System.exit(1);
 		}
