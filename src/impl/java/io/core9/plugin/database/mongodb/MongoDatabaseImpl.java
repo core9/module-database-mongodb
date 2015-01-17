@@ -4,14 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minidev.json.JSONArray;
-import net.minidev.json.parser.JSONParser;
-import net.minidev.json.parser.ParseException;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 
 import com.mongodb.BasicDBObject;
@@ -20,8 +16,8 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
 import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSFile;
@@ -48,63 +44,19 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	
 	public MongoDatabaseImpl() {
 		try {
-			List<ServerAddress> seeds = getSeeds();
-			List<MongoCredential> credentials = getCredentials();
-			client = new MongoClient(seeds, credentials);
+			String uriString = System.getProperty("core9.dburi", System.getenv("CORE9_DB_URI"));
+			if(uriString != null) {
+				MongoClientURI uri = new MongoClientURI(uriString);
+				this.masterDB = uri.getDatabase();
+				this.client = new MongoClient(uri);
+			} else {
+				this.client = new MongoClient("mongodb://localhost/core9");
+			}
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 			System.exit(1);
 		}
 	}
-	
-	private List<MongoCredential> getCredentials() {
-		List<MongoCredential> result = new ArrayList<MongoCredential>();
-		String credentials = System.getProperty("core9.dbcredentials", System.getenv("CORE9_DB_CREDENTIALS"));
-		if(credentials != null) {
-			try {
-				JSONArray credArray = (JSONArray) new JSONParser(JSONParser.MODE_PERMISSIVE).parse(credentials);
-				for(Object cred : credArray) {
-					if(!(cred instanceof JSONArray) || ((JSONArray) cred).size() != 3) {
-						throw new ParseException(1, ParseException.ERROR_UNEXPECTED_TOKEN, "Use an array of arrays, like [[\"user\", \"db\", \"pass\"], ...]");
-					} else {
-						JSONArray credential = (JSONArray) cred;
-						result.add(MongoCredential.createCredential((String) credential.get(0), (String) credential.get(1), ((String) credential.get(2)).toCharArray()));
-					}
-				}
-			} catch (ParseException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-		}
-		return result;
-	}
-
-	private List<ServerAddress> getSeeds() throws UnknownHostException {
-		String hosts = System.getProperty("core9.dbhosts", System.getenv("CORE9_DB_HOSTS"));
-		if(hosts != null) {
-			 return MongoDatabaseImpl.parse(hosts);
-		} else {
-			return Arrays.asList(new ServerAddress());
-		}
-	}
-	
-	/**
-     * Parse a string of addresses to a List of ServerAddress.
-     *
-     * @param addresses array of strings of form "host[:port],..."
-     * @return a list of ServerAddress from the {@code addresses}
-     * @throws UnknownHostException
-     */
-    public static List<ServerAddress> parse(String addresses) throws UnknownHostException {
-        final String[] addrs = addresses.split(" *, *");
-        final List<ServerAddress> result = new ArrayList<ServerAddress>(addrs.length);
-        for (String addressString : addrs) {
-            int idx = addressString.indexOf(':');
-            result.add((idx == -1) ? new ServerAddress(addressString) : new ServerAddress(addressString.substring(0, idx),
-                    Integer.parseInt(addressString.substring(idx + 1))));
-        }
-        return result;
-    }
 	
 	@Override
 	public DBCollection getCollection(String db, String coll) {
