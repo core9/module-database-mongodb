@@ -9,8 +9,11 @@ import java.util.HashMap;
 import java.util.Map;
 //import java.util.UUID;
 
+
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+
 
 
 
@@ -20,7 +23,7 @@ import com.github.fakemongo.Fongo;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 
-public class MongoDatabaseTest {
+@Ignore public class MongoDatabaseTest {
 	private Fongo fongo;
 	private MongoDatabase db;
 	
