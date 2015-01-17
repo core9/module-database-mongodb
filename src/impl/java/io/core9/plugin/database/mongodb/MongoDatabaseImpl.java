@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,23 +19,17 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoCredential;
-import com.mongodb.MongoException;
+import com.mongodb.ServerAddress;
 import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSFile;
 import com.mongodb.gridfs.GridFSInputFile;
 
-/**
- * TODO:
- *  - How do we store multiple hosts (via-via connection)?
- * @author mark
- *
- */
 @PluginImplementation
 public class MongoDatabaseImpl implements MongoDatabase {
 	
-	private MongoClient client;
-	private String masterDB = "server";
+	private final Map<String,MongoClient> clients = new HashMap<String,MongoClient>();
+	private String masterDB = "";
 	
 	@Override
 	public String getMasterDBName() {
@@ -44,57 +39,67 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	public void execute() {}
 	
 	public MongoDatabaseImpl() {
+		MongoClientURI uri = null;
+		if(System.getProperty("core9.dburi") != null) {
+			uri = new MongoClientURI(System.getProperty("core9.dburi"));
+		} else if(System.getenv("CORE9_DB_URI") != null) {
+			uri = new MongoClientURI(System.getenv("CORE9_DB_URI"));
+		} else {
+			uri = new MongoClientURI("mongodb://localhost/core9");
+		}
 		try {
-			String uriString = System.getProperty("core9.dburi", System.getenv("CORE9_DB_URI"));
-			if(uriString != null) {
-				MongoClientURI uri = new MongoClientURI(uriString);
-				this.masterDB = uri.getDatabase();
-				this.client = new MongoClient(uri);
-			} else {
-				this.client = new MongoClient("mongodb://localhost/core9");
-			}
-		} catch (MongoException | UnknownHostException e1) {
-			e1.printStackTrace();
-			System.exit(1);
+			this.masterDB = uri.getDatabase();
+			this.clients.put(uri.getDatabase(), new MongoClient(uri));
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
 		}
 	}
 	
 	@Override
 	public DBCollection getCollection(String db, String coll) {
-		return client.getDB(db).getCollection(coll);
+		return clients.get(db).getDB(db).getCollection(coll);
 	}
 	
 	@Override
 	public  DB getDb(String db) {
-		return client.getDB(db);
+		return clients.get(db).getDB(db);
 	}
 	
 	@Override
 	public void addDatabase(String db, String username, String password) throws UnknownHostException {
 		if(username == null || username.equals("")) {
-			this.client.getCredentialsList().add(MongoCredential.createCredential(username, db, password.toCharArray()));
+			this.clients.put(db, new MongoClient(this.clients.get(masterDB).getAddress()));
+		} else {
+			MongoCredential credential = MongoCredential.createMongoCRCredential(username, db, password.toCharArray());
+			this.clients.put(db, new MongoClient(this.clients.get(masterDB).getAddress(), Arrays.asList(credential)));
 		}
 	}
 	
 	@Override
 	public void addDatabase(String host, String db, String username, String password) throws UnknownHostException {
-		throw new UnsupportedOperationException("Multiple hosts has been disabled for a while.");
+		ServerAddress add = new ServerAddress(host);
+		if(username == null || username.equals("")) {
+			this.clients.put(db, new MongoClient(add));
+		} else {
+			MongoCredential credential = MongoCredential.createMongoCRCredential(username, db, password.toCharArray());
+			this.clients.put(db, new MongoClient(add, Arrays.asList(credential)));
+		}
 	}
 
 	@Override
 	public void setBackend(String db, MongoClient mongo) {
-		this.client = mongo;
+		this.clients.put(db, mongo);
 	}
 
 	@Override
 	public void setCollection(String db, String coll) {
-		this.client.getDB(db).getCollection(coll);
+		this.clients.get(db).getDB(db).getCollection(coll);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public Map<String, Object> getSingleResult(String db, String coll, Map<String, Object> query) {
-		DBObject obj = this.client.getDB(db).getCollection(coll).findOne(new BasicDBObject(query));
+		DBObject obj = this.clients.get(db).getDB(db).getCollection(coll).findOne(new BasicDBObject(query));
 		if(obj != null) {
 			return obj.toMap();
 		}
@@ -104,7 +109,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Map<String, Object> getSingleResult(String db, String coll, Map<String, Object> query,  Map<String, Object> fields) {
-		DBObject obj = this.client.getDB(db).getCollection(coll).findOne(new BasicDBObject(query), new BasicDBObject(fields));
+		DBObject obj = this.clients.get(db).getDB(db).getCollection(coll).findOne(new BasicDBObject(query), new BasicDBObject(fields));
 		if(obj != null) {
 			return obj.toMap();
 		}
@@ -115,7 +120,10 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	@Override
 	public List<Map<String, Object>> getMultipleResults(String db, String coll, Map<String, Object> query) {
 		List<Map<String, Object>> result = new ArrayList<Map<String,Object>>();
-		DBCursor cursor = this.client.getDB(db).getCollection(coll).find(new BasicDBObject(query));
+		if(this.clients.get(db) == null) {
+			return result;
+		}
+		DBCursor cursor = this.clients.get(db).getDB(db).getCollection(coll).find(new BasicDBObject(query));
 		while(cursor.hasNext()) {
 			result.add(cursor.next().toMap());
 		}
@@ -126,7 +134,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	@Override
 	public List<Map<String, Object>> getMultipleResults(String db, String coll, Map<String, Object> query, Map<String, Object> fields) {
 		List<Map<String, Object>> result = new ArrayList<Map<String,Object>>();
-		DBCursor cursor = this.client.getDB(db).getCollection(coll).find(new BasicDBObject(query), new BasicDBObject(fields));
+		DBCursor cursor = this.clients.get(db).getDB(db).getCollection(coll).find(new BasicDBObject(query), new BasicDBObject(fields));
 		while(cursor.hasNext()) {
 			result.add(cursor.next().toMap());
 		}
@@ -151,7 +159,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	@Override
 	public List<Map<String,Object>> queryStaticFiles(String db, String bucket, Map<String,Object> query) {
 		List<Map<String, Object>> result = new ArrayList<Map<String,Object>>();
-		GridFS myFS = new GridFS(this.client.getDB(db), bucket);
+		GridFS myFS = new GridFS(this.clients.get(db).getDB(db), bucket);
 		for(GridFSDBFile file : myFS.find(new BasicDBObject(query))) {
 			result.add(convertFileToMap(file));
 		}
@@ -160,7 +168,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 
 	@Override
 	public Map<String,Object> queryStaticFile(String db, String bucket, Map<String,Object> query) {
-		GridFS myFS = new GridFS(this.client.getDB(db), bucket);
+		GridFS myFS = new GridFS(this.clients.get(db).getDB(db), bucket);
 		GridFSDBFile file = myFS.findOne(new BasicDBObject(query));
 		if(file == null) {
 			return null;
@@ -175,7 +183,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 		query.put("_id", file.get("_id"));
 		String folder = (String) ((Map<String,Object>) file.get("metadata")).get("folder");
 		String filename = folder + file.get("filename");
-		GridFS myFS = new GridFS(this.client.getDB(db), bucket);
+		GridFS myFS = new GridFS(this.clients.get(db).getDB(db), bucket);
 		GridFSFile foundFile = myFS.findOne(new BasicDBObject(query));
 		foundFile.put("filename", filename);
 		if(file.get("contentType") != null) {
@@ -189,7 +197,10 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Map<String,Object> addStaticFile(String db, String bucket, Map<String,Object> file, InputStream stream) throws IOException {
-		GridFS myFS = new GridFS(this.client.getDB(db), bucket);
+		if(this.clients.get(db) == null) {
+			return null;
+		}
+		GridFS myFS = new GridFS(this.clients.get(db).getDB(db), bucket);
 		// TODO check if file is updated before removing and adding
 		Map<String,Object> metadata = (Map<String,Object>) file.get("metadata");
 		String folder = "";
@@ -244,7 +255,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	@Override
 	public InputStream getStaticFile(String db, String bucket, String filename) {
 		String file = filename.replace("\\", "/");
-		GridFS myFS = new GridFS(this.client.getDB(db), bucket);
+		GridFS myFS = new GridFS(this.clients.get(db).getDB(db), bucket);
 		try {
 			return myFS.findOne(file).getInputStream();
         } catch (NullPointerException e) {
@@ -256,7 +267,7 @@ public class MongoDatabaseImpl implements MongoDatabase {
 
 	@Override
 	public void removeStaticFile(String db, String bucket, String fileId) {
-		GridFS myFS = new GridFS(this.client.getDB(db), bucket);
+		GridFS myFS = new GridFS(this.clients.get(db).getDB(db), bucket);
 		DBObject query = new BasicDBObject();
 		query.put("_id", fileId);
 		myFS.remove(query);
@@ -286,24 +297,24 @@ public class MongoDatabaseImpl implements MongoDatabase {
 				setOnInsert.put("_id", GUID.getUUID());
 			}
 		}
-		this.client.getDB(db).getCollection(collection).update(new BasicDBObject(query), new BasicDBObject(doc), true, false);
+		this.clients.get(db).getDB(db).getCollection(collection).update(new BasicDBObject(query), new BasicDBObject(doc), true, false);
 		return (String) query.get("_id");
 	}
 
 	@Override
 	public void delete(String db, String collection, Map<String, Object> query) {
-		this.client.getDB(db).getCollection(collection).remove(new BasicDBObject(query));		
+		this.clients.get(db).getDB(db).getCollection(collection).remove(new BasicDBObject(query));		
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public List<String> getDistinctStrings(String db, String coll, String key, Map<String, Object> query) {
-		return this.client.getDB(db).getCollection(coll).distinct(key, new BasicDBObject(query));
+		return this.clients.get(db).getDB(db).getCollection(coll).distinct(key, new BasicDBObject(query));
 	}
 
 	@Override
 	public InputStream getStaticFile(String db, String bucket, Map<String, Object> query) {
-		GridFS myFS = new GridFS(this.client.getDB(db), bucket);
+		GridFS myFS = new GridFS(this.clients.get(db).getDB(db), bucket);
 		try {
 			return myFS.findOne(new BasicDBObject(query)).getInputStream();
         } catch (NullPointerException e) {
@@ -313,7 +324,10 @@ public class MongoDatabaseImpl implements MongoDatabase {
 
 	@Override
 	public void saveStaticFileContents(String db, String bucket, Map<String, Object> query, InputStream stream) {
-		GridFS myFS = new GridFS(this.client.getDB(db), bucket);
+		if(this.clients.get(db) == null) {
+			return;
+		}
+		GridFS myFS = new GridFS(this.clients.get(db).getDB(db), bucket);
 		GridFSDBFile oldFile = myFS.findOne(new BasicDBObject(query));
 		GridFSInputFile newFile = myFS.createFile(stream);
 		newFile.setFilename(oldFile.getFilename());

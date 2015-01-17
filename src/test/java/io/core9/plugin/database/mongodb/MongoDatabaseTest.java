@@ -1,22 +1,15 @@
 package io.core9.plugin.database.mongodb;
 
-import static org.junit.Assert.*;
-import io.core9.plugin.database.mongodb.MongoDatabase;
-import io.core9.plugin.database.mongodb.MongoDatabaseImpl;
+import static org.junit.Assert.assertEquals;
 
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 //import java.util.UUID;
 
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
-
-
-
 
 import com.github.fakemongo.Fongo;
 //import com.foursquare.fongo.Fongo;
