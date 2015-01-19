@@ -17,7 +17,6 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
@@ -78,12 +77,15 @@ public class MongoDatabaseImpl implements MongoDatabase {
 	
 	@Override
 	public void addDatabase(String host, String db, String username, String password) throws UnknownHostException {
-		ServerAddress add = new ServerAddress(host);
+		List<ServerAddress> addresses = new ArrayList<ServerAddress>();
+		for(String hostname : host.split(",")) {
+			addresses.add(new ServerAddress(hostname));
+		}
 		if(username == null || username.equals("")) {
-			this.clients.put(db, new MongoClient(add));
+			this.clients.put(db, new MongoClient(addresses));
 		} else {
 			MongoCredential credential = MongoCredential.createMongoCRCredential(username, db, password.toCharArray());
-			this.clients.put(db, new MongoClient(add, Arrays.asList(credential)));
+			this.clients.put(db, new MongoClient(addresses, Arrays.asList(credential)));
 		}
 	}
 
