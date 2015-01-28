@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBCollection;
+import com.mongodb.WriteConcern;
 
 @PluginImplementation
 public class RepositoryFactoryImpl implements RepositoryFactory {
@@ -60,6 +61,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T create(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				return coll.insert(entity).getSavedObject();
 			}
 
@@ -89,6 +91,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T update(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				int n = coll.updateById(entity.getId(), entity).getN();
 				if(n == 1) {
 					return entity;
@@ -100,6 +103,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T update(String database, String prefix, String id, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				int n = coll.updateById(id, entity).getN();
 				if(n == 1) {
 					return entity;
@@ -116,6 +120,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T updateFields(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				int n = coll.update(new BasicDBObject("_id", entity.getId()), new BasicDBObject("$set", DataUtils.toMap(entity)), true, false).getN();
 				if(n == 1) {
 					return entity;
@@ -132,6 +137,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T upsert(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				int n = coll.update(DBQuery.is("_id", entity.getId()), entity, true, false).getN();
 				if(n == 1) {
 					return entity;
@@ -149,6 +155,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public void delete(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				coll.removeById(entity.getId());
 			}
 			
@@ -161,6 +168,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public void delete(String database, String prefix, String id) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				coll.removeById(id);
 			}
 			
