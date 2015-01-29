@@ -29,39 +29,38 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBCollection;
-import com.mongodb.WriteConcern;
 
 @PluginImplementation
 public class RepositoryFactoryImpl implements RepositoryFactory {
-	
+
 	@InjectPlugin
 	private MongoDatabase mongo;
 
 	@Override
-	public <T extends CrudEntity> CrudRepository<T> getRepository(final Class<T> type) throws NoCollectionNamePresentException {
-		
+	public <T extends CrudEntity> CrudRepository<T> getRepository(final Class<T> type)
+			throws NoCollectionNamePresentException {
+
 		final Collection classColl = type.getAnnotation(Collection.class);
-		if(classColl == null) {
+		if (classColl == null) {
 			throw new NoCollectionNamePresentException();
 		}
-		
+
 		final ObjectMapper mapper = new ObjectMapper();
 		MongoJackModule.configure(mapper);
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		
-		return new CrudRepository<T>(){
+
+		return new CrudRepository<T>() {
 			String collectionName = classColl.value();
-			
+
 			@Override
 			public T create(VirtualHost vhost, T entity) {
 				return create((String) vhost.getContext("database"), (String) vhost.getContext("prefix"), entity);
 			}
-			
+
 			@Override
 			public T create(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				return coll.insert(entity).getSavedObject();
 			}
 
@@ -69,7 +68,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T read(VirtualHost vhost, String id) {
 				return read((String) vhost.getContext("database"), (String) vhost.getContext("prefix"), id);
 			}
-			
+
 			@Override
 			public T read(String database, String prefix, String id) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
@@ -81,53 +80,51 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T update(VirtualHost vhost, T entity) {
 				return update((String) vhost.getContext("database"), (String) vhost.getContext("prefix"), entity);
 			}
-			
+
 			@Override
 			public T update(VirtualHost vhost, String id, T entity) {
 				return update((String) vhost.getContext("database"), (String) vhost.getContext("prefix"), id, entity);
 			}
-			
+
 			@Override
 			public T update(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				int n = coll.updateById(entity.getId(), entity).getN();
-				if(n == 1) {
+				if (n == 1) {
 					return entity;
 				}
 				return null;
 			}
-			
+
 			@Override
 			public T update(String database, String prefix, String id, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				int n = coll.updateById(id, entity).getN();
-				if(n == 1) {
+				if (n == 1) {
 					return entity;
 				}
 				return null;
 			}
-			
+
 			@Override
 			public T updateFields(VirtualHost vhost, T entity) {
 				return updateFields((String) vhost.getContext("database"), (String) vhost.getContext("prefix"), entity);
 			}
-			
+
 			@Override
 			public T updateFields(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
-				int n = coll.update(new BasicDBObject("_id", entity.getId()), new BasicDBObject("$set", DataUtils.toMap(entity)), true, false).getN();
-				if(n == 1) {
+				int n = coll.update(new BasicDBObject("_id", entity.getId()),
+						new BasicDBObject("$set", DataUtils.toMap(entity)), true, false).getN();
+				if (n == 1) {
 					return entity;
 				}
 				return null;
 			}
-			
+
 			@Override
 			public T upsert(VirtualHost vhost, T entity) {
 				return upsert((String) vhost.getContext("database"), (String) vhost.getContext("prefix"), entity);
@@ -137,9 +134,8 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T upsert(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				int n = coll.update(DBQuery.is("_id", entity.getId()), entity, true, false).getN();
-				if(n == 1) {
+				if (n == 1) {
 					return entity;
 				}
 
@@ -150,33 +146,31 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public void delete(VirtualHost vhost, T entity) {
 				delete((String) vhost.getContext("database"), (String) vhost.getContext("prefix"), entity);
 			}
-			
+
 			@Override
 			public void delete(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				coll.removeById(entity.getId());
 			}
-			
+
 			@Override
 			public void delete(VirtualHost vhost, String id) {
 				delete((String) vhost.getContext("database"), (String) vhost.getContext("prefix"), id);
 			}
-			
+
 			@Override
 			public void delete(String database, String prefix, String id) {
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				coll.setWriteConcern(WriteConcern.REPLICA_ACKNOWLEDGED);
 				coll.removeById(id);
 			}
-			
+
 			@Override
 			public List<T> getAll(VirtualHost vhost) {
 				return getAll((String) vhost.getContext("database"), (String) vhost.getContext("prefix"));
 			}
-			
+
 			@Override
 			public List<T> getAll(String database, String prefix) {
 				return query(database, prefix, null);
@@ -186,15 +180,15 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public List<T> query(VirtualHost vhost, Map<String, Object> query) {
 				return query((String) vhost.getContext("database"), (String) vhost.getContext("prefix"), query);
 			}
-			
+
 			@Override
 			public List<T> query(String database, String prefix, Map<String, Object> query) {
 				try {
 					Map<String, Object> defQuery = type.newInstance().retrieveDefaultQuery();
-					if(query == null) {
+					if (query == null) {
 						query = new HashMap<String, Object>();
-					} 
-					if(defQuery != null) {
+					}
+					if (defQuery != null) {
 						query.putAll(defQuery);
 					}
 				} catch (InstantiationException | IllegalAccessException e) {
@@ -202,7 +196,7 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 				}
 				DBCollection collection = mongo.getCollection(database, prefix + collectionName);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				if(query == null) {
+				if (query == null) {
 					return coll.find().toArray();
 				}
 				return coll.find(new BasicDBObject(query)).toArray();
@@ -211,21 +205,23 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 	}
 
 	@Override
-	public <T extends CrudEntity> CrudRepository<T> getCachedRepository(Class<T> type) throws NoCollectionNamePresentException {
+	public <T extends CrudEntity> CrudRepository<T> getCachedRepository(Class<T> type)
+			throws NoCollectionNamePresentException {
 		return getRepository(type);
 	}
 
 	@Override
-	public <T extends CrudEntity> ObservableCrudRepository<T> getObservableRepository(Class<T> type) throws NoCollectionNamePresentException {
+	public <T extends CrudEntity> ObservableCrudRepository<T> getObservableRepository(Class<T> type)
+			throws NoCollectionNamePresentException {
 		final Collection classColl = type.getAnnotation(Collection.class);
-		if(classColl == null) {
+		if (classColl == null) {
 			throw new NoCollectionNamePresentException();
 		}
-		
+
 		final ObjectMapper mapper = new ObjectMapper();
 		MongoJackModule.configure(mapper);
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		
+
 		return new ObservableCrudRepository<T>() {
 			final String COLLECTION = classColl.value();
 
@@ -268,10 +264,11 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 			public T updateFields(String database, String prefix, T entity) {
 				DBCollection collection = mongo.getCollection(database, prefix + COLLECTION);
 				JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
-				Map<String,Object> fields = DataUtils.toMap(entity);
+				Map<String, Object> fields = DataUtils.toMap(entity);
 				fields.remove("_id");
-				int n = coll.update(new BasicDBObject("_id", entity.getId()), new BasicDBObject("$set", fields), false, false).getN();
-				if(n == 1) {
+				int n = coll.update(new BasicDBObject("_id", entity.getId()), new BasicDBObject("$set", fields), false,
+						false).getN();
+				if (n == 1) {
 					return entity;
 				}
 				return null;
@@ -308,18 +305,19 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 					try {
 						Map<String, Object> defQuery = type.newInstance().retrieveDefaultQuery();
 						BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
-						if(defQuery != null) {
+						if (defQuery != null) {
 							defQuery.forEach((key, value) -> {
 								builder.append(key, value);
 							});
 						}
-						if(query != null) {
+						if (query != null) {
 							query.forEach((key, value) -> {
 								builder.append(key, value);
 							});
-						} 
+						}
 						DBCollection collection = mongo.getCollection(database, prefix + COLLECTION);
-						JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class, mapper);
+						JacksonDBCollection<T, String> coll = JacksonDBCollection.wrap(collection, type, String.class,
+								mapper);
 						coll.find(builder.get()).forEach(found -> {
 							subscriber.onNext(found);
 						});
