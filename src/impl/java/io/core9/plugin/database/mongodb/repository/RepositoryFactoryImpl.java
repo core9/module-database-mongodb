@@ -13,7 +13,7 @@ import io.core9.plugin.server.VirtualHost;
 import java.util.Map;
 
 import net.xeoh.plugins.base.annotations.PluginImplementation;
-import net.xeoh.plugins.base.annotations.injections.InjectPlugin;
+import net.xeoh.plugins.base.annotations.events.PluginLoaded;
 
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.internal.MongoJackModule;
@@ -29,9 +29,13 @@ import com.mongodb.DBCollection;
 
 @PluginImplementation
 public class RepositoryFactoryImpl implements RepositoryFactory {
-
-	@InjectPlugin
+	
 	private MongoDatabase mongo;
+	
+	@PluginLoaded
+	public void onDatabase(MongoDatabase database) {
+		this.mongo = database;
+	}
 
 	@Override
 	public <T extends CrudEntity> CrudRepository<T> getRepository(final Class<T> type) throws NoCollectionNamePresentException {
@@ -52,7 +56,9 @@ public class RepositoryFactoryImpl implements RepositoryFactory {
 		final ObjectMapper mapper = new ObjectMapper();
 		MongoJackModule.configure(mapper);
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		return new MongoCrudRepository<T>(type, collection, mongo);
+		MongoCrudRepository<T> repo = new MongoCrudRepository<T>(type, collection, mapper);
+		repo.setMongoDatabase(mongo);
+		return repo;
 	}
 	
 	@Override

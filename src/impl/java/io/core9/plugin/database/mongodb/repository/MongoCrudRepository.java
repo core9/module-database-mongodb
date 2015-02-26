@@ -17,18 +17,21 @@ import io.core9.plugin.database.repository.CrudRepository;
 import io.core9.plugin.database.repository.DataUtils;
 import io.core9.plugin.server.VirtualHost;
 
-public class MongoCrudRepository<T extends CrudEntity> implements
-		CrudRepository<T> {
+public class MongoCrudRepository<T extends CrudEntity> implements CrudRepository<T> {
 
-	private final ObjectMapper mapper = new ObjectMapper();
+	private final ObjectMapper mapper;
 	private final String collection;
 	private final Class<T> type;
-	private final MongoDatabase mongo;
+	private MongoDatabase mongo;
 
-	public MongoCrudRepository(Class<T> type, String collection, MongoDatabase mongo) {
+	public MongoCrudRepository(Class<T> type, String collection, ObjectMapper mapper) {
 		this.type = type;
 		this.collection = collection;
-		this.mongo = mongo;
+		this.mapper = mapper;
+	}
+	
+	public void setMongoDatabase(final MongoDatabase database) {
+		this.mongo = database;
 	}
 
 	private String getCollectionName(T entity) {
